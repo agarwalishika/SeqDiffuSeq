@@ -8,6 +8,7 @@ from mpi4py import MPI
 import os
 import random
 import numpy as np
+import json
 logging.basicConfig(level=logging.INFO)
 
 def get_dataloader(tokenizer, data_path, batch_size, max_seq_len, max_seq_len_src, args):
@@ -145,15 +146,33 @@ class TextDataset_translation(TextDataset):
 
     def read_data(self):
         print("Reading data from {}".format(self.data_path))
-        data = [open(self.data_path+'.'+self.src, 'r').readlines(),
+
+        df = {}
+        i = 0
+        with open(self.data_path+'.'+self.src, 'r') as f:
+            for line in f:
+                df[i] = json.loads(line)
+                i += 1
+        data_df = pd.DataFrame.from_dict(df, orient='index')
+        data_df = data_df[['category', 'questionText']].reset_index()
+        data_df.columns = ['id', 'source', 'target']
+
+        '''data = [open(self.data_path+'.'+self.src, 'r').readlines(),
                 open(self.data_path+'.'+self.tgt, 'r').readlines()]
         print(f"Tokenizing {len(data[0])} sentences")
 
-        data = [[src, tgt] for src, tgt in zip(data[0], data[1])]
+        print(data.keys)
+
+        data = [[src, tgt] for src, tgt in zip(data[1], data[2])]
         # random.shuffle(data)
 
         self.src_text = [item[0].strip('\n') for item in data]
-        self.tgt_text = [item[1].strip('\n') for item in data]
+        self.tgt_text = [item[1].strip('\n') for item in data]'''
+
+        self.src_text = list(data_df['source'].values)
+        print(type(self.src_text))
+        
+        self.tgt_text = list(data_df['target'].values)
 
         bos_idx = (len(self.src_text) // self.num_shards) * self.shard
         eos_idx = (len(self.src_text) // self.num_shards) * (self.shard+1)

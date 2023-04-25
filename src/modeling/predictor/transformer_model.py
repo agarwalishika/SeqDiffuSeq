@@ -39,7 +39,7 @@ class TransformerNetModel_encoder_decoder(nn.Module):
         use_checkpoint=False,
         num_heads=1,
         config=None,
-        config_name="bert-base-uncased",
+        config_name="t5-base",
         vocab_size=None,
         logits_mode=1,
         encoder_layers = 6,
@@ -173,7 +173,7 @@ class TransformerNetModel_encoder_decoder(nn.Module):
         # decoder_inputs_embeds = self.input_transformers.decoder.embed_tokens(decoder_input_ids) * self.embed_scale
         if self_conditions is not None:
             
-            decoder_inputs_embeds = th.concat((decoder_inputs_embeds, self_conditions), dim = -1)
+            decoder_inputs_embeds = th.cat((decoder_inputs_embeds, self_conditions), dim = -1)
 
         decoder_inputs_embeds = (
             self.input_up_proj_dec(decoder_inputs_embeds)
@@ -217,7 +217,7 @@ class TransformerNetModel_encoder_decoder(nn.Module):
             emb = emb.unsqueeze(1).expand(-1, seq_length, -1)
         if self_conditions is not None:
             
-            decoder_inputs_embeds = th.concat((decoder_inputs_embeds, self_conditions), dim = -1)
+            decoder_inputs_embeds = th.cat((decoder_inputs_embeds, self_conditions), dim = -1)
 
         decoder_inputs_embeds = (
             self.input_up_proj_dec(decoder_inputs_embeds)
