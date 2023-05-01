@@ -15,6 +15,7 @@ from model_utils import create_model_and_diffusion
 from args_utils import create_argparser, args_to_dict, model_and_diffusion_defaults
 from tokenizer_utils import create_tokenizer
 import dataloader_utils
+from dataloader_utils import TextDataset_translation
 from mpi4py import MPI
 
 def main():
@@ -28,6 +29,7 @@ def main():
     logger.configure()
 
     # load configurations.
+    #CHANGE DEBUG
     args.checkpoint_path = os.path.split(args.model_name_or_path)[0]
 
     config_path = os.path.join(args.checkpoint_path, "training_args.json")
@@ -66,6 +68,7 @@ def main():
         resume_checkpoint=args.resume_checkpoint, **args_to_dict(args, model_and_diffusion_defaults().keys())
     )
 
+    #CHANGE DEBUG
     diffusion._load_time_schedule(args.time_schedule_path)
     model.load_state_dict(dist_util.load_state_dict(args.model_name_or_path, map_location="cpu"))
     model.eval()
@@ -97,8 +100,9 @@ def main():
     logger.log(f"Clamping is set to {args.clamp}")
     all_samples = []
     ground_true_samples = []
+    doc_ids = []
     while len(all_samples) * args.batch_size < args.num_samples:
-        batch, _ = next(val_dataloader)
+        batch, doc_id = next(val_dataloader)
         model_kwargs = {key:item.to(dist_util.dev()) for key, item in batch.items() if 'decoder' not in key}
         sample_shape = (args.batch_size, args.sequence_len, model.input_transformers.shared.weight.shape[1])
         print('sample_shape', sample_shape)
@@ -121,8 +125,9 @@ def main():
 
         logits = model.get_logits(sample)  # bsz, seqlen, vocab
         cands = th.topk(logits, k=1, dim=-1).indices.squeeze()
-        if args.decoder_attention_mask:
-            cands[model_kwargs['decoder_attention_mask']==0] = 1
+        #if args.decoder_attention_mask:
+        #    cands[model_kwargs['decoder_attention_mask']==0] = 1
+        #cands[model_kwargs['decoder_attention_mask']==0] = 1
 
         gathered_samples = [th.zeros_like(cands) for _ in range(dist.get_world_size())]
         dist.all_gather(gathered_samples, cands)  # gather not supported with NCCL
@@ -133,6 +138,8 @@ def main():
         gathered_ground_true_sample = [th.zeros_like(batch['decoder_input_ids']) for _ in range(dist.get_world_size())]
         dist.all_gather(gathered_ground_true_sample, batch['decoder_input_ids'])
         ground_true_samples.extend([sample.cpu().numpy() for sample in gathered_ground_true_sample])
+
+        doc_ids.extend(doc_id)
 
         logger.log(f"created {len(all_samples) * args.batch_size} samples")
 
@@ -159,7 +166,8 @@ def main():
                   sentences=decoded_sentences, 
                   gt_sentences = ground_true_sentences,
                   raw_sentences=cands,
-                  raw_gt_sentences=ground_true_samples,)
+                  raw_gt_sentences=ground_true_samples,
+                  doc_ids=doc_ids)
 
 
 def load_embeddings(checkpoint_path, tokenizer, emb_dim):
@@ -173,7 +181,7 @@ def read_training_args(config_path):
         return json.load(f)
 
 
-def write_outputs(args: dict, sentences: List[str], gt_sentences: List[str], raw_sentences, raw_gt_sentences) -> None:
+def write_outputs(args: dict, sentences: List[str], gt_sentences: List[str], raw_sentences, raw_gt_sentences, doc_ids) -> None:
 
     model_dir = os.path.split(args.model_name_or_path)[0]
     model_base_name = os.path.split(args.model_name_or_path)[1]
@@ -190,7 +198,7 @@ def write_outputs(args: dict, sentences: List[str], gt_sentences: List[str], raw
     ) + ".txt"
     with open(output_file_basepath, "w") as text_fout:
         for generated_sentence, ground_true_sentence in zip(sentences, gt_sentences):
-            text_fout.write(json.dumps([generated_sentence, ground_true_sentence]) + "\n")
+            text_fout.write(json.dumps([doc_ids, generated_sentence, ground_true_sentence]) + "\n")
 
         print(f"written the decoded output to {output_file_basepath}")
 
@@ -200,7 +208,7 @@ def write_outputs(args: dict, sentences: List[str], gt_sentences: List[str], raw
     ) + ".txt"
     with open(output_file_basepath, "w") as text_fout:
         for generated_sentence, ground_true_sentence in zip(raw_sentences, raw_gt_sentences):
-            text_fout.write(json.dumps([generated_sentence.tolist(), ground_true_sentence.tolist()]) + "\n")
+            text_fout.write(json.dumps([doc_ids, generated_sentence.tolist(), ground_true_sentence.tolist()]) + "\n")
 
         print(f"written the decoded output to {output_file_basepath}")
 

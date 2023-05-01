@@ -1,1 +1,2 @@
-source ./train_scripts/amazonqa.sh 1 jsonl jsonl
+#time source ./train_scripts/squad.sh jsonl jsonl
+time source ./inference_scrpts/squad.sh /home/ishikaa2/SeqDiffuSeq/ckpts/SQuAD_ckpts/trial_64_0.0001_2000_1000000_10000_schegran20000_srcjsonl_tgten/ema_0.9999_090000.pt results/squad /home/ishikaa2/SeqDiffuSeq/ckpts/SQuAD_ckpts/trial_64_0.0001_2000_1000000_10000_schegran20000_srcjsonl_tgten/alpha_cumprod_step_90000.npy
