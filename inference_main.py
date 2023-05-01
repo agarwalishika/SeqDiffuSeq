@@ -127,7 +127,7 @@ def main():
         cands = th.topk(logits, k=1, dim=-1).indices.squeeze()
         #if args.decoder_attention_mask:
         #    cands[model_kwargs['decoder_attention_mask']==0] = 1
-        #cands[model_kwargs['decoder_attention_mask']==0] = 1
+        cands[model_kwargs['decoder_attention_mask']==0] = 1
 
         gathered_samples = [th.zeros_like(cands) for _ in range(dist.get_world_size())]
         dist.all_gather(gathered_samples, cands)  # gather not supported with NCCL

@@ -148,37 +148,40 @@ class TextDataset_translation(TextDataset):
     def read_data(self):
         print("Reading data from {}".format(self.data_path))
 
-	# CommonGen
+	    # CommonGen
+        if "common" in self.data_path:
         
-        df = {}
-        i = 0
-        with open(self.data_path+"."+self.src, 'r') as f:
-            for line in f:
-                data_line = json.loads(line)
-                for scene_str in data_line['scene']:
-                    df[i] = {}
-                    df[i]['concept_set'] = ' '.join(data_line['concept_set'].split('#'))
-                    df[i]['gen_scene'] = scene_str
-                    i += 1
-        data_df = pd.DataFrame.from_dict(df, orient='index').reset_index()
-        data_df.columns = ['id', 'source', 'target']
-        ids, _ = pd.factorize(data_df['source'])
-        data_df['id'] = ids
+            df = {}
+            i = 0
+            with open(self.data_path+"."+self.src, 'r') as f:
+                for line in f:
+                    data_line = json.loads(line)
+                    for scene_str in data_line['scene']:
+                        df[i] = {}
+                        df[i]['concept_set'] = ' '.join(data_line['concept_set'].split('#'))
+                        df[i]['gen_scene'] = scene_str
+                        i += 1
+            data_df = pd.DataFrame.from_dict(df, orient='index').reset_index()
+            data_df.columns = ['id', 'source', 'target']
+            ids, _ = pd.factorize(data_df['source'])
+            data_df['id'] = ids
         
 
         # AMAZONQA
-        '''df = {}
-        i = 0
-        with open(self.data_path+'.'+self.src, 'r') as f:
-            for line in f:
-                df[i] = json.loads(line)
-                df[i]['review_snippets'] = ' '.join(df[i]['review_snippets'])
-                i += 1
-        data_df = pd.DataFrame.from_dict(df, orient='index')
-        data_df = data_df[['review_snippets', 'questionText']].reset_index()
-        data_df.columns = ['id', 'source', 'target']
-        ids, _ = pd.factorize(data_df['source'])
-        data_df['id'] = ids'''
+        if "amazon" in self.data_path:
+            df = {} 
+            i = 0
+            with open(self.data_path+'.'+self.src, 'r') as f:
+                for line in f:
+                    df[i] = json.loads(line)
+                    df[i]['review_snippets'] = ' '.join(df[i]['review_snippets'])
+                    i += 1
+            data_df = pd.DataFrame.from_dict(df, orient='index')
+            data_df = data_df[['review_snippets', 'questionText']].reset_index()
+            data_df.columns = ['id', 'source', 'target']
+            ids, _ = pd.factorize(data_df['source'])
+            data_df['id'] = ids
+        
 
         '''
         data = [open(self.data_path+'.'+self.src, 'r').readlines(),
@@ -195,33 +198,34 @@ class TextDataset_translation(TextDataset):
         '''
 
         # SQUAD
-        if 'train' in self.data_path:
-            split = 'train'
-            mode = 'train'
-        elif 'val' in self.data_path:
-            split = 'validation'
-            mode = 'nothing'
-        else:
-            split = 'train'
-            mode = 'test'
-        
-        dataset = load_dataset('squad_v2', split=split)
-        data_df = pd.DataFrame(dataset)
-        data_df = data_df[['context', 'question']].reset_index()
-        data_df.columns = ['id', 'source', 'target']
+        if "SQuAD" in self.data_path or "squad" in self.data_path:
+            if 'train' in self.data_path:
+                split = 'train'
+                mode = 'train'
+            elif 'val' in self.data_path:
+                split = 'validation'
+                mode = 'nothing'
+            else:
+                split = 'train'
+                mode = 'test'
+            
+            dataset = load_dataset('squad_v2', split=split)
+            data_df = pd.DataFrame(dataset)
+            data_df = data_df[['context', 'question']].reset_index()
+            data_df.columns = ['id', 'source', 'target']
 
-        # group by doc
-        grouped = data_df[["id", "source", "target"]].groupby("source").agg(lambda x: list(x))
-        grouped = grouped.sample(frac=1, random_state=598)
-        if mode is 'train':
-            grouped = grouped[:16000]
-        elif mode is 'test':
-            grouped = grouped[16000:]
+            # group by doc
+            grouped = data_df[["id", "source", "target"]].groupby("source").agg(lambda x: list(x))
+            grouped = grouped.sample(frac=1, random_state=598)
+            if mode is 'train':
+                grouped = grouped[:16000]
+            elif mode is 'test':
+                grouped = grouped[:-2]
 
-        # ungroup
-        grouped = grouped.explode(['target', 'id'])
-        
-        data_df = grouped.sample(frac=1).reset_index()
+            # ungroup
+            grouped = grouped.explode(['target', 'id'])
+            
+            data_df = grouped.sample(frac=1).reset_index()
         
 
         self.doc_ids = list(data_df['id'])

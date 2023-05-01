@@ -59,9 +59,9 @@ def create_argparser():
 def additional_args_for_translation():
 
     return dict(
-        pretrained_tokenizer='bert-base-uncased',
+        pretrained_tokenizer=None,
         sequence_len_src=64,
-        use_pretrained_tokenizer=True,
+        use_pretrained_tokenizer=False,
         generate_by_q=False,
         generate_by_mix=False,
         generate_by_mix_prob=0.0,
