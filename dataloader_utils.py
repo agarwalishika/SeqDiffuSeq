@@ -148,7 +148,26 @@ class TextDataset_translation(TextDataset):
     def read_data(self):
         print("Reading data from {}".format(self.data_path))
 
+	# CommonGen
+        
+        df = {}
+        i = 0
+        with open(self.data_path+"."+self.src, 'r') as f:
+            for line in f:
+                data_line = json.loads(line)
+                for scene_str in data_line['scene']:
+                    df[i] = {}
+                    df[i]['concept_set'] = ' '.join(data_line['concept_set'].split('#'))
+                    df[i]['gen_scene'] = scene_str
+                    i += 1
+        data_df = pd.DataFrame.from_dict(df, orient='index').reset_index()
+        data_df.columns = ['id', 'source', 'target']
+        ids, _ = pd.factorize(data_df['source'])
+        data_df['id'] = ids
+        
+
         # AMAZONQA
+        '''
         df = {}
         i = 0
         with open(self.data_path+'.'+self.src, 'r') as f:
@@ -161,6 +180,7 @@ class TextDataset_translation(TextDataset):
         data_df.columns = ['id', 'source', 'target']
         ids, _ = pd.factorize(data_df['source'])
         data_df['id'] = ids
+        '''
 
         '''
         data = [open(self.data_path+'.'+self.src, 'r').readlines(),
