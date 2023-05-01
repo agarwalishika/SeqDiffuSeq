@@ -11,7 +11,7 @@ SEQ_LEN=64
 SCHEDULE_UPDATE=20000
 WARMUP=10000
 LR_ANNEAL_STEPS=1000000
-DSET="AmazonQA_ckpts"
+DSET="CommonGen_ckpts"
 MICRO_BSZ=128
 UPDATE_GRANU=20
 INIT_PRETRAINED_MODEL="False"
@@ -22,8 +22,8 @@ DIFFUSION_STEPS=2000
 NOISE_SCHEDULE=sqrt
 BATCH_SIZE=128
 CHECKPOINT_PATH="ckpts/${DSET}/trial_${SEQ_LEN}_${LR}_${DIFFUSION_STEPS}_${LR_ANNEAL_STEPS}_${WARMUP}_schegran${SCHEDULE_UPDATE}_src${SRC}_tgt${TGT}"
-TRAIN_TXT_PATH="./data/AmazonQA/train"
-VAL_TXT_PATH="./data/AmazonQA/valid"
+TRAIN_TXT_PATH="./data/CommonGen/commongen.train"
+VAL_TXT_PATH="./data/CommonGen/commongen.dev"
 IN_CHANNELS=512
 WEIGHT_DECAY=0.0
 SEED=10708
@@ -47,7 +47,7 @@ ARGS=(--checkpoint_path ${CHECKPOINT_PATH}
     --weight_decay ${WEIGHT_DECAY}
     --predict_xstart True
     --train_txt_path ${TRAIN_TXT_PATH}
-    --dataset "AmazonQA"
+    --dataset "CommonGen"
     --val_txt_path ${VAL_TXT_PATH}
     --config_name ${CONFIG_NAME}
     --init_pretrained ${INIT_PRETRAINED_MODEL}
