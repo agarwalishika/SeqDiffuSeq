@@ -40,6 +40,7 @@ You may modify the scripts in ./train_scripts for your own training settings.
 After training accomplish, you can run the following line for inference:
 ```{bash}
 bash ./inference_scrpts/iwslt_inf.sh path-to-ckpts/ema_0.9999_280000.pt path-to-save-results path-to-ckpts/alpha_cumprod_step_260000.npy
+# MAKE SURE TO CHANGE DATALOADER_UTILS.PY:282 FROM NONE TO DOC_IDS
 ```
 The ema_0.9999_280000.pt file is the model weights and alpha_cumprod_step_260000.npy is the saved noise schedule. You have to use the most recent .npy schedule file saved before .pt model weight file.
 
