@@ -325,6 +325,7 @@ class GaussianDiffusion:
             self._loss_history[t] += loss
             self._loss_history_count[t] += loss_m.astype(float)  #loss_m 64 shape.  [1,1,1,0,0,0,0,0,0,0]
 
+        did_write = False
         if training_step >= (self._loss_history_update_stride*3) and training_step % self._loss_history_update_stride == 0:
             interp_alpha_cumprod = []
             loss_dist = self._loss_history / self._loss_history_count # TxS
@@ -349,10 +350,15 @@ class GaussianDiffusion:
                 np.save(os.path.join(self.save_dir, f'alpha_cumprod_step_{training_step}.npy'), self.alphas_cumprod)
                 np.save(os.path.join(self.save_dir, f'loss_step_{training_step}.npy'), self._loss_history)
                 np.save(os.path.join(self.save_dir, f'loss_count_{training_step}.npy'), self._loss_history_count)
+                did_write = True
 
             self._loss_history = np.ones((self.num_timesteps//self._loss_interp_granu, self.token_max_length)) * np.linspace(0, 0.5, self.num_timesteps//self._loss_interp_granu)[:,None]
             self._loss_history_count = np.ones((self.num_timesteps//self._loss_interp_granu, self.token_max_length))
-                
+
+        if not did_write and training_step % 10000 == 0:
+            np.save(os.path.join(self.save_dir, f'alpha_cumprod_step_{training_step}.npy'), self.alphas_cumprod)
+            np.save(os.path.join(self.save_dir, f'loss_step_{training_step}.npy'), self._loss_history)
+            np.save(os.path.join(self.save_dir, f'loss_count_{training_step}.npy'), self._loss_history_count)
     def training_losses(self, model, training_step, t, model_kwargs=None, noise=None):
         """
         Compute training losses for a single timestep.

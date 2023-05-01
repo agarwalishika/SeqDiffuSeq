@@ -39,7 +39,7 @@ class TransformerNetModel_encoder_decoder(nn.Module):
         use_checkpoint=False,
         num_heads=1,
         config=None,
-        config_name="t5-base",
+        config_name="bert-base_uncased",
         vocab_size=None,
         logits_mode=1,
         encoder_layers = 6,

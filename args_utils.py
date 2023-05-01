@@ -22,7 +22,7 @@ def create_argparser():
         seed=101,
         gradient_clipping=-1.0,
         eval_interval=2000,
-        checkpoint_path="diff_models",
+        checkpoint_path="/home/ishikaa2/SeqDiffuSeq/ckpts/SQuAD_ckpts/",
         train_txt_path="data/quotes_train.txt",
         val_txt_path="data/quotes_valid.txt",
         dataset="",
@@ -59,9 +59,9 @@ def create_argparser():
 def additional_args_for_translation():
 
     return dict(
-        pretrained_tokenizer=None,
+        pretrained_tokenizer='bert-base-uncased',
         sequence_len_src=64,
-        use_pretrained_tokenizer=False,
+        use_pretrained_tokenizer=True,
         generate_by_q=False,
         generate_by_mix=False,
         generate_by_mix_prob=0.0,

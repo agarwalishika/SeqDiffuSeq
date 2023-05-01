@@ -4,6 +4,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 import torch
 from functools import partial
+from datasets import load_dataset
 from mpi4py import MPI
 import os
 import random
@@ -147,17 +148,22 @@ class TextDataset_translation(TextDataset):
     def read_data(self):
         print("Reading data from {}".format(self.data_path))
 
+        # AMAZONQA
         df = {}
         i = 0
         with open(self.data_path+'.'+self.src, 'r') as f:
             for line in f:
                 df[i] = json.loads(line)
+                df[i]['review_snippets'] = ' '.join(df[i]['review_snippets'])
                 i += 1
         data_df = pd.DataFrame.from_dict(df, orient='index')
-        data_df = data_df[['category', 'questionText']].reset_index()
+        data_df = data_df[['review_snippets', 'questionText']].reset_index()
         data_df.columns = ['id', 'source', 'target']
+        ids, _ = pd.factorize(data_df['source'])
+        data_df['id'] = ids
 
-        '''data = [open(self.data_path+'.'+self.src, 'r').readlines(),
+        '''
+        data = [open(self.data_path+'.'+self.src, 'r').readlines(),
                 open(self.data_path+'.'+self.tgt, 'r').readlines()]
         print(f"Tokenizing {len(data[0])} sentences")
 
@@ -167,8 +173,41 @@ class TextDataset_translation(TextDataset):
         # random.shuffle(data)
 
         self.src_text = [item[0].strip('\n') for item in data]
-        self.tgt_text = [item[1].strip('\n') for item in data]'''
+        self.tgt_text = [item[1].strip('\n') for item in data]
+        '''
 
+        # SQUAD
+        '''
+        if 'train' in self.data_path:
+            split = 'train'
+            mode = 'train'
+        elif 'val' in self.data_path:
+            split = 'validation'
+            mode = 'nothing'
+        else:
+            split = 'train'
+            mode = 'test'
+        
+        dataset = load_dataset('squad_v2', split=split)
+        data_df = pd.DataFrame(dataset)
+        data_df = data_df[['context', 'question']].reset_index()
+        data_df.columns = ['id', 'source', 'target']
+
+        # group by doc
+        grouped = data_df[["id", "source", "target"]].groupby("source").agg(lambda x: list(x))
+        grouped = grouped.sample(frac=1, random_state=598)
+        if mode is 'train':
+            grouped = grouped[:16000]
+        elif mode is 'test':
+            grouped = grouped[16000:]
+
+        # ungroup
+        grouped = grouped.explode(['target', 'id'])
+        
+        data_df = grouped.sample(frac=1).reset_index()
+        '''
+
+        self.doc_ids = list(data_df['id'])
         self.src_text = list(data_df['source'].values)
         print(type(self.src_text))
         
@@ -212,6 +251,7 @@ class TextDataset_translation(TextDataset):
         out_dict = {
             "encoder_input_ids": self.input_ids_src[i],
             "decoder_input_ids": self.input_ids_tgt[i],
+            "doc_id": self.doc_ids[i]
         }
         return out_dict
 
@@ -226,6 +266,8 @@ class TextDataset_translation(TextDataset):
         tokens_tgt = torch.ones(num_elems, max_token_len_tgt).long() * padding_token
         tokens_mask_tgt = torch.zeros(num_elems, max_token_len_tgt).long()
 
+        doc_ids = []
+
         for i in range(num_elems):
             toks_src = batch[i]["encoder_input_ids"][:max_token_len_src]
             toks_tgt = batch[i]["decoder_input_ids"][:max_token_len_tgt]
@@ -234,6 +276,7 @@ class TextDataset_translation(TextDataset):
             tokens_tgt[i, :l_t] = torch.LongTensor(toks_tgt)
             tokens_mask_src[i, :l_s] = 1
             tokens_mask_tgt[i, :] = 1
+            doc_ids.append(batch[i]['doc_id'])
 
         return {"input_ids": tokens_src, "attention_mask": tokens_mask_src, 
                     'decoder_input_ids': tokens_tgt, 'decoder_attention_mask': tokens_mask_tgt}, None

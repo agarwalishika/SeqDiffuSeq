@@ -86,6 +86,6 @@ ARGS+=(--encoder_layers 6
     --schedule_update_stride $SCHEDULE_UPDATE)
 
 NUM_GPUS=1
-export CUDA_VISIBLE_DEVICES=$GPU && mpiexec -n $NUM_GPUS python -u main.py "${ARGS[@]}"
+export CUDA_VISIBLE_DEVICES=1 && mpiexec -n $NUM_GPUS python -u main.py "${ARGS[@]}"
 
 
