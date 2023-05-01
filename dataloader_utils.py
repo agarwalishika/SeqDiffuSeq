@@ -167,8 +167,7 @@ class TextDataset_translation(TextDataset):
         
 
         # AMAZONQA
-        '''
-        df = {}
+        '''df = {}
         i = 0
         with open(self.data_path+'.'+self.src, 'r') as f:
             for line in f:
@@ -179,8 +178,7 @@ class TextDataset_translation(TextDataset):
         data_df = data_df[['review_snippets', 'questionText']].reset_index()
         data_df.columns = ['id', 'source', 'target']
         ids, _ = pd.factorize(data_df['source'])
-        data_df['id'] = ids
-        '''
+        data_df['id'] = ids'''
 
         '''
         data = [open(self.data_path+'.'+self.src, 'r').readlines(),
@@ -197,7 +195,6 @@ class TextDataset_translation(TextDataset):
         '''
 
         # SQUAD
-        '''
         if 'train' in self.data_path:
             split = 'train'
             mode = 'train'
@@ -225,7 +222,7 @@ class TextDataset_translation(TextDataset):
         grouped = grouped.explode(['target', 'id'])
         
         data_df = grouped.sample(frac=1).reset_index()
-        '''
+        
 
         self.doc_ids = list(data_df['id'])
         self.src_text = list(data_df['source'].values)
@@ -299,4 +296,4 @@ class TextDataset_translation(TextDataset):
             doc_ids.append(batch[i]['doc_id'])
 
         return {"input_ids": tokens_src, "attention_mask": tokens_mask_src, 
-                    'decoder_input_ids': tokens_tgt, 'decoder_attention_mask': tokens_mask_tgt}, None
+                    'decoder_input_ids': tokens_tgt, 'decoder_attention_mask': tokens_mask_tgt}, doc_ids
